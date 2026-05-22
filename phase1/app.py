@@ -115,6 +115,18 @@ div[data-baseweb="select"] > div {
     transform: translateY(-1px) !important;
 }
 
+/* Reset button style override */
+div[data-testid="column"]:nth-child(2) .stButton > button {
+    background-color: #1a2530 !important;
+    color: #4a5a66 !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+}
+
+div[data-testid="column"]:nth-child(2) .stButton > button:hover {
+    background-color: #222f3a !important;
+    color: #7a8a96 !important;
+}
+
 [data-testid="stMetric"] {
     background-color: #0d1117;
     border: 1px solid rgba(0,200,83,0.2);
@@ -176,14 +188,13 @@ SUIT_MAP = {'Spades':'s','Hearts':'h','Diamonds':'d','Clubs':'c'}
 def to_card(rank_name, suit_name):
     return RANK_MAP[rank_name] + SUIT_MAP[suit_name]
 
-def available_ranks(used_cards, suit_name, exclude_keys=[]):
-    used = set(used_cards)
-    result = []
-    for r in RANKS:
-        card = to_card(r, suit_name) if suit_name else None
-        if r not in exclude_keys:
-            result.append(r)
-    return result
+# ── Session state init ───────────────────────────────────────
+if 'flop' not in st.session_state:
+    st.session_state.flop = []
+
+for key in ['r1','s1','r2','s2','r3','s3','r4','s4','r5','s5','r6','s6','r7','s7']:
+    if key not in st.session_state:
+        st.session_state[key] = '—'
 
 # ── Header ───────────────────────────────────────────────────
 st.markdown("""
@@ -201,9 +212,11 @@ def card_selector(label_rank, label_suit, key_rank, key_suit, used_cards, option
     suit_options = ['—'] + SUITS if optional else SUITS
     col_r, col_s = st.columns(2)
     with col_r:
-        rank = st.selectbox(label_rank, rank_options, key=key_rank)
+        rank_index = rank_options.index(st.session_state.get(key_rank, '—')) if st.session_state.get(key_rank, '—') in rank_options else 0
+        rank = st.selectbox(label_rank, rank_options, index=rank_index, key=key_rank)
     with col_s:
-        suit = st.selectbox(label_suit, suit_options, key=key_suit)
+        suit_index = suit_options.index(st.session_state.get(key_suit, '—')) if st.session_state.get(key_suit, '—') in suit_options else 0
+        suit = st.selectbox(label_suit, suit_options, index=suit_index, key=key_suit)
     if rank == '—' or suit == '—':
         return None
     card = to_card(rank, suit)
@@ -216,18 +229,18 @@ def card_selector(label_rank, label_suit, key_rank, key_suit, used_cards, option
 st.markdown('<p class="section-label">Your Cards</p>', unsafe_allow_html=True)
 used_cards = []
 
-card1 = card_selector('Card 1 Rank', 'Card 1 Suit', 'r1', 's1', used_cards, optional = True)
+card1 = card_selector('Card 1 Rank', 'Card 1 Suit', 'r1', 's1', used_cards, optional=True)
 if card1:
     used_cards.append(card1)
 
-card2 = card_selector('Card 2 Rank', 'Card 2 Suit', 'r2', 's2', used_cards, optional = True)
+card2 = card_selector('Card 2 Rank', 'Card 2 Suit', 'r2', 's2', used_cards, optional=True)
 if card2:
     used_cards.append(card2)
 
 # ── Table ────────────────────────────────────────────────────
 st.markdown('<p class="section-label">Table</p>', unsafe_allow_html=True)
-num_players = st.number_input('Number of players', min_value = 2, max_value = 9, value = 2, step = 1)
-num_simulations = st.slider('Simulation count', min_value = 10000, max_value = 100000, value = 10000, step = 5000)
+num_players = st.number_input('Number of players', min_value=2, max_value=9, value=2, step=1)
+num_simulations = st.slider('Simulation count', min_value=10000, max_value=100000, value=10000, step=5000)
 
 # ── Community Cards ──────────────────────────────────────────
 st.markdown('<p class="section-label">Community Cards</p>', unsafe_allow_html=True)
@@ -248,26 +261,34 @@ if turn: used_cards.append(turn)
 river = card_selector('River Rank', 'River Suit', 'r7', 's7', used_cards, optional=True)
 if river: used_cards.append(river)
 
-# ── Calculate ────────────────────────────────────────────────
+# ── Calculate & Reset buttons ────────────────────────────────
 st.markdown('<div style="height: 8px"></div>', unsafe_allow_html=True)
+btn_col1, btn_col2 = st.columns([3, 1])
 
-if st.button('Calculate Equity'):
+with btn_col1:
+    calculate = st.button('Calculate Equity')
+with btn_col2:
+    reset = st.button('Reset')
+
+if reset:
+    for key in ['r1','s1','r2','s2','r3','s3','r4','s4','r5','s5','r6','s6','r7','s7']:
+        if key in st.session_state:
+            del st.session_state[key]
+    st.rerun()
+
+if calculate:
     errors = []
 
-    # Both hole cards required
     if not card1 or not card2:
         errors.append('Please select both of your hole cards.')
 
-    # Flop must be all 3 or none
     flop_cards = [c for c in [flop1, flop2, flop3] if c is not None]
     if len(flop_cards) == 1 or len(flop_cards) == 2:
         errors.append('Please select all 3 flop cards or leave the flop blank.')
 
-    # Turn requires flop
     if turn and len(flop_cards) != 3:
         errors.append('Please complete the flop before adding the turn.')
 
-    # River requires turn
     if river and not turn:
         errors.append('Please add the turn card before adding the river.')
 
@@ -278,9 +299,9 @@ if st.button('Calculate Equity'):
         known_board = [c for c in [flop1, flop2, flop3, turn, river] if c is not None]
         with st.spinner('Running simulations...'):
             hole_cards = [card1, card2]
-            result = calculate_equity_single(hole_cards, int(num_players), known_board = known_board, num_simulations = int(num_simulations))
+            result = calculate_equity_single(hole_cards, int(num_players), known_board=known_board, num_simulations=int(num_simulations))
         st.success('Simulation complete')
-        st.metric(label = 'Monte Carlo Win Probability', value = f'{result:.1f}%')
+        st.metric(label='Monte Carlo Win Probability', value=f'{result:.1f}%')
 
 # ── Graph placeholder ────────────────────────────────────────
 st.markdown('<hr class="divider">', unsafe_allow_html=True)
