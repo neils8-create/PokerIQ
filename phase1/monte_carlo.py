@@ -18,6 +18,7 @@ HAND_NAMES = {
 def run_monte_carlo(hole_cards, num_players, num_simulations = 50000, known_board = []):
     wins = 0
     hand_type_counts = {name: 0 for name in HAND_NAMES.values()}
+    opponent_hand_type_counts = {name: 0 for name in HAND_NAMES.values()}
     equity_progression = []
     results = {'wins': 0, 'ties': 0, 'losses': 0}
 
@@ -48,6 +49,9 @@ def run_monte_carlo(hole_cards, num_players, num_simulations = 50000, known_boar
 
         # check if you beat all opponents
         best_opponent = max(best_hand(opp, board) for opp in opponents)
+        opponent_hand_name = HAND_NAMES[best_opponent[0]]
+        opponent_hand_type_counts[opponent_hand_name] += 1
+
         if your_rank > best_opponent:
             results['wins'] += 1
         elif your_rank == best_opponent:
@@ -73,7 +77,8 @@ def run_monte_carlo(hole_cards, num_players, num_simulations = 50000, known_boar
         'ties': results['ties'],
         'losses': results['losses'],
         'hand_type_counts': hand_type_counts,
-        'equity_progression': equity_progression
+        'equity_progression': equity_progression,
+        'opponent_hand_type_counts': opponent_hand_type_counts
     }
 
 def run_exact_enumeration(hole_cards, num_players, known_board):
