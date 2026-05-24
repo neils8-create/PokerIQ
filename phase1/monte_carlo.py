@@ -198,6 +198,20 @@ def calculate_street_equities(hole_cards, num_players, known_board, num_simulati
 
     return {'streets': streets, 'equities': equities}
 
+def calculate_player_count_equities(hole_cards, known_board, num_simulations = 5000):
+    player_counts = [2, 3, 4, 5, 6, 7, 8, 9]
+    equities_by_count = {}
+
+    for count in player_counts:
+        equity = run_monte_carlo(hole_cards, count, num_simulations, known_board)['win_pct']
+        equities_by_count[count] = equity
+
+    return {
+    'player_counts': player_counts,
+    'win_pcts': [equities_by_count[count] for count in player_counts]
+}
+
+
 
 # Turn test — 2 players, should be 46 × 990 = 45,540 total
 result4 = run_exact_enumeration(['As', 'Ah'], 2, ['Kd', '7c', '2h', '9s'])
