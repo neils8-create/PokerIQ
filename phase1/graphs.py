@@ -1,12 +1,11 @@
 import plotly.graph_objects as go
-from monte_carlo import run_monte_carlo, calculate_street_equities, calculate_player_count_equities
+from monte_carlo import run_monte_carlo, calculate_street_equities, calculate_player_count_equities, calculate_outs
 
 def plot_convergence(equity_progression, final_win_pct):
-    
     x_values = list(range(100, len(equity_progression) * 100 + 1, 100))
-    
+
     fig = go.Figure()
-    
+
     fig.add_trace(go.Scatter(
         x=x_values,
         y=equity_progression,
@@ -14,7 +13,7 @@ def plot_convergence(equity_progression, final_win_pct):
         name='Win % Estimate',
         line=dict(color='#00c853', width=1.5)
     ))
-    
+
     fig.add_hline(
         y=final_win_pct,
         line_dash='dash',
@@ -34,7 +33,7 @@ def plot_convergence(equity_progression, final_win_pct):
         font=dict(color='#e8edf2'),
         showlegend=True
     )
-    
+
     return fig
 
 def plot_outcome_distribution(hand_type_counts, num_simulations):
@@ -55,9 +54,7 @@ def plot_outcome_distribution(hand_type_counts, num_simulations):
         yaxis_title='Frequency (%)',
         yaxis=dict(range=[0, 100]),
         template='plotly_dark',
-        xaxis=dict(
-            tickfont=dict(size=10)
-        ),  # <-- comma was missing here
+        xaxis=dict(tickfont=dict(size=10)),
         paper_bgcolor='#080b0f',
         plot_bgcolor='#0d1117',
         font=dict(color='#e8edf2'),
@@ -174,6 +171,113 @@ def plot_player_count_curve(player_counts, win_pcts):
 
     return fig
 
+def plot_outs_visualization(cards, classifications, hole_cards, known_board):
+    RANKS = ['2','3','4','5','6','7','8','9','T','J','Q','K','A']
+    SUITS = ['c','d','h','s']
+    rank_to_x = {r: i for i, r in enumerate(RANKS)}
+    suit_to_y = {s: i for i, s in enumerate(SUITS)}
+
+    COLOR_MAP = {
+        'bright_green': '#00c853',
+        'yellow': '#ffd740',
+        'green': '#69f0ae',
+        'red': '#ff4d4d',
+        'grey': '#2a3a46',
+        'used': '#111827'
+    }
+
+    LEGEND_ITEMS = [
+        ('bright_green', 'Immediate improvement'),
+        ('yellow', 'Draw advancement'),
+        ('green', 'Kicker improvement'),
+        ('red', 'Danger card'),
+        ('grey', 'Neutral'),
+        ('used', 'In play (hole/board)')
+    ]
+
+    card_to_class = dict(zip(cards, classifications))
+    used_cards = set(hole_cards + known_board)
+
+    x_vals = []
+    y_vals = []
+    colors = []
+    labels = []
+
+    for suit in SUITS:
+        for rank in RANKS:
+            card = rank + suit
+            x_vals.append(rank_to_x[rank])
+            y_vals.append(suit_to_y[suit])
+            labels.append(card)
+            if card in used_cards:
+                colors.append(COLOR_MAP['used'])
+            else:
+                cls = card_to_class.get(card, 'grey')
+                colors.append(COLOR_MAP.get(cls, COLOR_MAP['grey']))
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter(
+        x=x_vals,
+        y=y_vals,
+        mode='markers+text',
+        marker=dict(
+            size=35,
+            color=colors,
+            symbol='square',
+            line=dict(width=1, color='#1a2332')
+        ),
+        text=labels,
+        textposition='middle center',
+        textfont=dict(color='#e8edf2', size=9),
+        showlegend=False
+    ))
+
+    for key, name in LEGEND_ITEMS:
+        fig.add_trace(go.Scatter(
+            x=[None],
+            y=[None],
+            mode='markers',
+            marker=dict(size=12, color=COLOR_MAP[key], symbol='square'),
+            name=name,
+            showlegend=True
+        ))
+
+    fig.update_layout(
+        title='Outs Visualization',
+        template='plotly_dark',
+        paper_bgcolor='#080b0f',
+        plot_bgcolor='#0d1117',
+        font=dict(color='#e8edf2'),
+        xaxis=dict(
+            title='',
+            showticklabels=False,
+            range=[-0.5, 12.5],
+            fixedrange=True,
+            showgrid=False
+        ),
+        yaxis=dict(
+            title='',
+            showticklabels=False,
+            range=[-0.5, 3.5],
+            fixedrange=True,
+            showgrid=False,
+            scaleanchor='x',
+            scaleratio=1
+        ),
+        showlegend=True,
+        legend=dict(
+            orientation='h',
+            yanchor='bottom',
+            y=-0.15,
+            xanchor='center',
+            x=0.5
+        ),
+        margin=dict(l=40, r=40, t=60, b=80)
+    )
+
+    return fig
+
 result = run_monte_carlo(['As', 'Ah'], 2, num_simulations=50000)
 fig2 = plot_outcome_distribution(result['hand_type_counts'], 50000)
 fig2.show()
@@ -182,6 +286,10 @@ fig3.show()
 street_result = calculate_street_equities(['As', 'Ah'], 2, ['Kd', '7c', '2h', '9s', '3d'])
 fig4 = plot_equity_over_streets(street_result['streets'], street_result['equities'])
 fig4.show()
+from monte_carlo import calculate_player_count_equities
 pc_result = calculate_player_count_equities(['As', 'Ah'], [])
 fig5 = plot_player_count_curve(pc_result['player_counts'], pc_result['win_pcts'])
 fig5.show()
+outs = calculate_outs(['9h', '7d'], ['5h', '2c', 'Kd'])
+fig6 = plot_outs_visualization(outs['cards'], outs['classifications'], ['9h', '7d'], ['5h', '2c', 'Kd'])
+fig6.show()
