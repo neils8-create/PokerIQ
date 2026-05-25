@@ -128,39 +128,3 @@ def calculate_equity_single(hole_cards, num_players, num_simulations=10000, know
             wins += 1
 
     return wins / num_simulations * 100
-
-    
-
-
-
-deck = build_deck()
-hole_p1 = ['As', 'Ah']
-hole_p2 = ['Ks', 'Kh']
-remaining_deck = [card for card in deck if card not in hole_p1 + hole_p2]
-
-board = deal_random_board(remaining_deck)
-print('Board:', board)
-
-rank_p1 = best_hand(hole_p1, board)
-rank_p2 = best_hand(hole_p2, board)
-print('Player 1 best hand rank:', rank_p1)
-print('Player 2 best hand rank:', rank_p2)
-
-if rank_p1 > rank_p2:
-    print('Player 1 wins')
-elif rank_p2 > rank_p1:
-    print('Player 2 wins')
-else:
-    print('Tie')
-
-deal_random_board(remaining_deck)
-
-print('\n--- Equity Calculations ---')
-calculate_equity(['As', 'Kh'], ['7d', '7c'])
-calculate_equity(['As', 'Ah'], ['Ks', 'Kh'])
-calculate_equity(['As', 'Kd'], ['Ah', 'Kh'])
-
-print(evaluate_hand(['As', 'Ah', 'Ad', 'Ac', '7s']))  # (7, [12, 5])
-print(evaluate_hand(['Ks', 'Kh', 'Kd', '7s', '7h']))  # (6, [11, 5])
-print(evaluate_hand(['As', 'Ah', 'Ks', 'Kh', 'Qh']))  # (2, [12, 12, 11, 11, 10])
-print(evaluate_hand(['As', 'Ah', 'Ks', 'Qh', 'Jh']))  # (1, [12, 12, 11, 10, 9])

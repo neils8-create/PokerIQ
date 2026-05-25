@@ -277,20 +277,3 @@ def plot_exact_distribution(hand_type_counts, total):
     )
 
     return fig
-
-result = run_monte_carlo(['As', 'Ah'], 2, num_simulations=50000)
-fig3 = plot_opponent_distribution(result['hand_type_counts'], result['opponent_hand_type_counts'], 50000)
-fig3.show()
-street_result = calculate_street_equities(['As', 'Ah'], 2, ['Kd', '7c', '2h', '9s', '3d'])
-fig4 = plot_equity_over_streets(street_result['streets'], street_result['equities'])
-fig4.show()
-from monte_carlo import calculate_player_count_equities
-pc_result = calculate_player_count_equities(['As', 'Ah'], [])
-fig5 = plot_player_count_curve(pc_result['player_counts'], pc_result['win_pcts'])
-fig5.show()
-outs = calculate_outs(['9h', '7d'], ['5h', '2c', 'Kd'])
-fig6 = plot_outs_visualization(outs['cards'], outs['classifications'], ['9h', '7d'], ['5h', '2c', 'Kd'])
-fig6.show()
-exact = run_exact_enumeration(['As', 'Ah'], 2, ['Kd', '7c', '2h', '9s'])
-fig7 = plot_exact_distribution(exact['hand_type_counts'], sum(exact['hand_type_counts'].values()))
-fig7.show()
