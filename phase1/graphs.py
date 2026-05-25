@@ -1,5 +1,5 @@
 import plotly.graph_objects as go
-from monte_carlo import run_monte_carlo, calculate_street_equities, calculate_player_count_equities, calculate_outs
+from monte_carlo import run_monte_carlo, run_exact_enumeration, calculate_street_equities, calculate_player_count_equities, calculate_outs
 
 def plot_convergence(equity_progression, final_win_pct):
     x_values = list(range(100, len(equity_progression) * 100 + 1, 100))
@@ -278,6 +278,33 @@ def plot_outs_visualization(cards, classifications, hole_cards, known_board):
 
     return fig
 
+def plot_exact_distribution(hand_type_counts, total):
+    labels = list(hand_type_counts.keys())
+    values = list(hand_type_counts.values())
+    percentages = [count / total * 100 for count in values]
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=labels,
+        y=percentages,
+        marker_color='#4da6ff'
+    ))
+
+    fig.update_layout(
+        title='Exact Enumeration Hand Type Distribution',
+        xaxis_title='Hand Type',
+        yaxis_title='Frequency (%)',
+        yaxis=dict(range=[0, 100]),
+        template='plotly_dark',
+        xaxis=dict(tickfont=dict(size=10)),
+        paper_bgcolor='#080b0f',
+        plot_bgcolor='#0d1117',
+        font=dict(color='#e8edf2'),
+        showlegend=False
+    )
+
+    return fig
+
 result = run_monte_carlo(['As', 'Ah'], 2, num_simulations=50000)
 fig2 = plot_outcome_distribution(result['hand_type_counts'], 50000)
 fig2.show()
@@ -293,3 +320,6 @@ fig5.show()
 outs = calculate_outs(['9h', '7d'], ['5h', '2c', 'Kd'])
 fig6 = plot_outs_visualization(outs['cards'], outs['classifications'], ['9h', '7d'], ['5h', '2c', 'Kd'])
 fig6.show()
+exact = run_exact_enumeration(['As', 'Ah'], 2, ['Kd', '7c', '2h', '9s'])
+fig7 = plot_exact_distribution(exact['hand_type_counts'], sum(exact['hand_type_counts'].values()))
+fig7.show()

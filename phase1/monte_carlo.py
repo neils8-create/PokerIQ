@@ -224,8 +224,12 @@ def run_exact_enumeration(hole_cards, num_players, known_board):
     deck = build_deck()
     remaining_deck = [card for card in deck if card not in hole_cards + known_board]
     results = {'wins': 0, 'ties': 0, 'losses': 0}
+    hand_type_counts = {name: 0 for name in HAND_NAMES.values()}
 
     if len(known_board) == 5:
+        your_rank = best_hand(hole_cards, known_board)
+        hand_name = HAND_NAMES[your_rank[0]]
+        hand_type_counts[hand_name] += 1
         opp_results = evaluate_opponents(hole_cards, known_board, remaining_deck, num_players)
         results['wins'] += opp_results['wins']
         results['ties'] += opp_results['ties']
@@ -235,6 +239,9 @@ def run_exact_enumeration(hole_cards, num_players, known_board):
         cards_needed = 5 - len(known_board)
         for combo in itertools.combinations(remaining_deck, cards_needed):
             board = known_board + list(combo)
+            your_rank = best_hand(hole_cards, board)
+            hand_name = HAND_NAMES[your_rank[0]]
+            hand_type_counts[hand_name] += 1
             opp_deck = [card for card in remaining_deck if card not in combo]
             opp_results = evaluate_opponents(hole_cards, board, opp_deck, num_players)
             results['wins'] += opp_results['wins']
@@ -253,7 +260,8 @@ def run_exact_enumeration(hole_cards, num_players, known_board):
         'wins': results['wins'],
         'ties': results['ties'],
         'losses': results['losses'],
-        'total': total
+        'total': total,
+        'hand_type_counts': hand_type_counts
     }
 
 def calculate_street_equities(hole_cards, num_players, known_board, num_simulations=10000):
